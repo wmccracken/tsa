@@ -21,6 +21,8 @@ pub struct Device {
     #[serde(default)]
     pub node_key: String,
     #[serde(default)]
+    pub tailnet_lock_error: String,
+    #[serde(default)]
     pub tailnet_lock_key: String,
     #[serde(default)]
     pub blocks_incoming_connections: bool,
@@ -46,7 +48,7 @@ impl Device {
     }
 
     pub fn is_locked_out(&self) -> bool {
-        !self.tailnet_lock_key.is_empty() && self.blocks_incoming_connections
+        !self.tailnet_lock_key.is_empty() && !self.tailnet_lock_error.is_empty()
     }
 
     pub fn has_lock_keys(&self) -> bool {

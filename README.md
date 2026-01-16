@@ -1,6 +1,6 @@
-# tsa - Tailscale API CLI
+# tsa - Tailscale CLI Tool
 
-A command-line tool for managing device tags and signing locked-out nodes on your Tailscale network.
+A command-line tool written in `Rust` for managing device tags and signing locked-out nodes on your Tailscale network.
 
 ## Installation
 
@@ -9,6 +9,8 @@ cargo build --release
 ```
 
 The binary will be at `target/release/tsa`.
+
+Packages for popular distributions will be coming soon.
 
 ## Configuration
 
@@ -124,7 +126,6 @@ The `sign` command will:
 
 - Tags must be defined in your [tailnet policy file (ACL)](https://login.tailscale.com/admin/acls) before they can be applied to devices.
 - Updating tags on a device does not change the device's key expiry unless you re-authenticate.
-- For tailnet lock signing, the API must return `nodeKey` and `tailnetLockKey` fields. These are included when using `?fields=all` on the devices endpoint.
 
 ## License
 

@@ -32,6 +32,7 @@ pub async fn run_sign(
 
     let devices_with_keys: Vec<_> = all_devices
         .iter()
+        .filter(|d| d.is_locked_out())
         .filter(|d| d.has_lock_keys())
         .cloned()
         .collect();
@@ -43,7 +44,7 @@ pub async fn run_sign(
                 print_warning("No devices matched the given pattern(s).");
                 if !devices_with_keys.is_empty() {
                     println!();
-                    print_info("Devices with tailnet lock keys:");
+                    print_info("Locked devices:");
                     println!();
                     print_devices_with_lock_info(&devices_with_keys);
                 }
@@ -60,7 +61,7 @@ pub async fn run_sign(
                 println!("  {} The API didn't return lock key fields", "•".dimmed());
                 return Ok(());
             }
-            print_info("Devices with tailnet lock keys:");
+            print_info("Locked devices:");
             println!();
             print_devices_with_lock_info(&devices_with_keys);
             println!();
