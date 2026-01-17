@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "tsa")]
+#[command(version)]
 #[command(about = "Tailscale API CLI tool for managing device tags and signing locked nodes", long_about = None)]
 pub struct Cli {
     /// Tailscale API key (can also be set via TAILSCALE_API_KEY env var)
@@ -27,6 +28,18 @@ pub enum Commands {
         /// Show only locked-out devices
         #[arg(long)]
         locked: bool,
+
+        /// Columns to display (comma-separated: hostname,name,owner,os,status,locked,tags)
+        #[arg(long, value_delimiter = ',')]
+        columns: Option<Vec<String>>,
+
+        /// Disable paging (show all results at once)
+        #[arg(long)]
+        no_paging: bool,
+
+        /// Output as JSON instead of a table
+        #[arg(long)]
+        json: bool,
     },
 
     /// Update tags on specified devices (replaces existing tags)

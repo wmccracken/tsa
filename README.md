@@ -30,8 +30,19 @@ Optionally, set your tailnet name:
 ## Usage
 
 ```bash
-# List all devices
+# Check version
+tsa --version
+# or
+tsa -V
+
+# List all devices (with automatic paging)
 tsa list
+
+# List all devices without paging
+tsa list --no-paging
+
+# List only specific columns
+tsa list --columns hostname,status,locked
 
 # List locked-out devices (tailnet lock)
 tsa list --locked
@@ -69,11 +80,44 @@ Devices can be specified by name, hostname, or ID. The matching priority is:
 
 When multiple devices match a pattern, you'll be shown the list and asked to confirm before proceeding.
 
+### List Command
+
+The `list` command automatically pages output to fit your terminal size, similar to `less` or `more`:
+
+- If the output fits on one screen, it displays directly
+- If the output is longer, it shows one page at a time with interactive controls:
+  - Press `Space` or `Enter` to see the next page
+  - Press `q` or `Esc` to quit
+- Use `--no-paging` to disable paging and show all results at once
+- Use `--columns` to select which columns to display (available: hostname, name, owner, os, status, locked, tags)
+- Use `--json` to output data as JSON instead of a table (useful for scripting and piping to tools like `jq`)
+
 ### Examples
 
 ```bash
-# List all devices
+# List all devices (with automatic paging)
 tsa list
+
+# List without paging
+tsa list --no-paging
+
+# Show only specific columns
+tsa list --columns hostname,name,status
+
+# Combine column selection with locked devices
+tsa list --locked --columns hostname,status,locked
+
+# Output as JSON (useful for scripting)
+tsa list --json
+
+# Output locked devices as JSON
+tsa list --locked --json
+
+# Pipe JSON output to jq for filtering
+tsa list --json | jq '.[] | select(.os == "linux")'
+
+# Get just hostnames of online devices using jq
+tsa list --json | jq -r '.[] | select(.lastSeen == "") | .hostname'
 
 # Set tags on a specific device
 tsa update-tags -d myserver -t tag:prod,tag:web
@@ -126,6 +170,16 @@ The `sign` command will:
 
 - Tags must be defined in your [tailnet policy file (ACL)](https://login.tailscale.com/admin/acls) before they can be applied to devices.
 - Updating tags on a device does not change the device's key expiry unless you re-authenticate.
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/). To check the current version:
+
+```bash
+tsa --version
+```
+
+The version number is defined in [Cargo.toml](Cargo.toml) and automatically included in the binary.
 
 ## License
 

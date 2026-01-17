@@ -27,7 +27,7 @@ pub async fn run_update_tags(
         matched_devices.len().to_string().cyan()
     ));
     println!();
-    print_devices_table(&matched_devices);
+    print_devices_table(&matched_devices, None);
     println!();
     println!(
         "{} {}",
@@ -79,7 +79,7 @@ pub async fn run_add_tags(
         matched_devices.len().to_string().cyan()
     ));
     println!();
-    print_devices_table(&matched_devices);
+    print_devices_table(&matched_devices, None);
     println!();
     println!(
         "{} {}",
@@ -135,7 +135,7 @@ pub async fn run_remove_tags(
         matched_devices.len().to_string().cyan()
     ));
     println!();
-    print_devices_table(&matched_devices);
+    print_devices_table(&matched_devices, None);
     println!();
     println!(
         "{} {}",

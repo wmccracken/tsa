@@ -5,7 +5,7 @@ pub struct DevicesResponse {
     pub devices: Vec<Device>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Device {
     pub id: String,

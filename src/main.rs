@@ -18,8 +18,13 @@ async fn main() -> Result<()> {
     let skip_confirm = cli.yes;
 
     match cli.command {
-        Commands::List { locked } => {
-            run_list(&client, locked).await?;
+        Commands::List {
+            locked,
+            columns,
+            no_paging,
+            json,
+        } => {
+            run_list(&client, locked, columns, no_paging, json).await?;
         }
         Commands::UpdateTags { devices, tags } => {
             run_update_tags(&client, &devices, &tags, skip_confirm).await?;
