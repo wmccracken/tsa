@@ -724,6 +724,68 @@ mod tests {
     }
 
     #[test]
+    fn test_find_devices_by_pattern_hyphen_prefix_exact() {
+        let devices = vec![
+            create_test_device("1", "-gpu-1", "host1"),
+            create_test_device("2", "-gpu-2", "host2"),
+            create_test_device("3", "gpu-3", "host3"),
+        ];
+        let result = find_devices_by_pattern("-gpu-1", &devices);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "-gpu-1");
+    }
+
+    #[test]
+    fn test_find_devices_by_pattern_hyphen_prefix_partial() {
+        let devices = vec![
+            create_test_device("1", "-gpu-1", "host1"),
+            create_test_device("2", "-gpu-2", "host2"),
+            create_test_device("3", "gpu-3", "host3"),
+        ];
+        let result = find_devices_by_pattern("-gpu", &devices);
+        assert_eq!(result.len(), 2);
+        assert!(result.iter().any(|d| d.name == "-gpu-1"));
+        assert!(result.iter().any(|d| d.name == "-gpu-2"));
+    }
+
+    #[test]
+    fn test_find_devices_by_pattern_multiple_hyphens() {
+        let devices = vec![
+            create_test_device("1", "--special-device", "host1"),
+            create_test_device("2", "-regular-device", "host2"),
+            create_test_device("3", "no-prefix-device", "host3"),
+        ];
+        let result = find_devices_by_pattern("--special-device", &devices);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].name, "--special-device");
+    }
+
+    #[test]
+    fn test_find_devices_by_pattern_hyphen_hostname() {
+        let devices = vec![
+            create_test_device("1", "device1", "-special-host"),
+            create_test_device("2", "device2", "normal-host"),
+        ];
+        let result = find_devices_by_pattern("-special-host", &devices);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].hostname, "-special-host");
+    }
+
+    #[test]
+    fn test_resolve_device_patterns_with_hyphens() {
+        let devices = vec![
+            create_test_device("1", "-gpu-1", "host1"),
+            create_test_device("2", "-gpu-2", "host2"),
+            create_test_device("3", "server-01", "host3"),
+        ];
+        let patterns = vec!["-gpu-1".to_string(), "server-01".to_string()];
+        let result = resolve_device_patterns(&patterns, &devices);
+        assert_eq!(result.len(), 2);
+        assert!(result.iter().any(|d| d.name == "-gpu-1"));
+        assert!(result.iter().any(|d| d.name == "server-01"));
+    }
+
+    #[test]
     fn test_format_tags_multiple() {
         let tags = vec!["tag:server".to_string(), "tag:prod".to_string()];
         let result = format_tags(&tags);
