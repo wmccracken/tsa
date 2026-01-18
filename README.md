@@ -36,28 +36,49 @@ tsa --version
 tsa -V
 
 # List all devices (with automatic paging)
-tsa list
+tsa devices list
 
 # List all devices without paging
-tsa list --no-paging
+tsa devices list --no-paging
 
 # List only specific columns
-tsa list --columns hostname,status,locked
+tsa devices list --columns hostname,status,locked
 
 # List locked-out devices (tailnet lock)
-tsa list --locked
+tsa devices list --locked
 
 # Update tags (replaces existing tags)
-tsa update-tags -d <device-pattern> -t <tags>
+tsa devices update-tags -d <device-pattern> -t <tags>
 
-# Add tags (keeps existing tags)
-tsa add-tags -d <device-pattern> -t <tags>
+# Add tags with interactive device selection
+tsa devices add-tags -t <tags>
 
 # Remove tags
-tsa remove-tags -d <device-pattern> -t <tags>
+tsa devices remove-tags -d <device-pattern> -t <tags>
 
 # Sign locked-out devices (tailnet lock)
-tsa sign -d <device-pattern>
+tsa devices sign -d <device-pattern>
+
+# Sign with interactive device selection
+tsa devices sign
+
+# List users in the tailnet
+tsa users list
+
+# List tailnet contacts
+tsa contacts list
+
+# Approve a user
+tsa users approve -u user@example.com
+
+# Suspend a user
+tsa users suspend -u user@example.com
+
+# Restore a suspended user
+tsa users restore -u user@example.com
+
+# Delete a user
+tsa users delete -u user@example.com
 ```
 
 ### Options
@@ -80,6 +101,27 @@ Devices can be specified by name, hostname, or ID. The matching priority is:
 
 When multiple devices match a pattern, you'll be shown the list and asked to confirm before proceeding.
 
+### Interactive Device Selection
+
+When you run certain commands without specifying device patterns (or omit the `-d` flag), you'll be presented with an interactive device selector, similar to tools like `yay`:
+
+```bash
+# Interactive selection for signing
+tsa devices sign
+
+# Interactive selection for tag operations
+tsa devices add-tags -t tag:prod
+tsa devices update-tags -t tag:server
+tsa devices remove-tags -t tag:deprecated
+```
+
+The interactive selector displays a numbered list of devices and accepts:
+- **Single numbers**: `1 3 5` - selects devices 1, 3, and 5
+- **Ranges**: `1-5` - selects devices 1 through 5
+- **Combinations**: `1 3-7 10` - selects device 1, devices 3-7, and device 10
+- **All devices**: `all` or `*` - selects all devices
+- **Cancel**: empty input or `none` - cancels the operation
+
 ### List Command
 
 The `list` command automatically pages output to fit your terminal size, similar to `less` or `more`:
@@ -89,53 +131,153 @@ The `list` command automatically pages output to fit your terminal size, similar
   - Press `Space` or `Enter` to see the next page
   - Press `q` or `Esc` to quit
 - Use `--no-paging` to disable paging and show all results at once
-- Use `--columns` to select which columns to display (available: hostname, name, owner, os, status, locked, tags)
+- Use `--columns` to select which columns to display
+
+Available columns:
+- `id` - Device ID
+- `hostname` - Device hostname
+- `name` - Device name
+- `owner` (or `user`) - Device owner email
+- `os` - Operating system
+- `status` - Online/offline status
+- `locked` - Tailnet lock status
+- `tags` - Device tags
+- `last_seen` - Last seen timestamp
+- `node_key` - Node key
+- `tailnet_lock_key` (or `lock_key`) - Tailnet lock key
+- `tailnet_lock_error` (or `lock_error`) - Tailnet lock error message
+- `blocks_incoming_connections` (or `blocks_incoming`) - Whether device blocks incoming connections
 - Use `--json` to output data as JSON instead of a table (useful for scripting and piping to tools like `jq`)
 
 ### Examples
 
 ```bash
 # List all devices (with automatic paging)
-tsa list
+tsa devices list
 
 # List without paging
-tsa list --no-paging
+tsa devices list --no-paging
 
 # Show only specific columns
-tsa list --columns hostname,name,status
+tsa devices list --columns hostname,name,status
+
+# Show device IDs and tags
+tsa devices list --columns id,hostname,tags
+
+# Show lock-related information
+tsa devices list --columns hostname,locked,tailnet_lock_error
+
+# Show all device details
+tsa devices list --columns id,hostname,name,owner,os,status,tags,last_seen
 
 # Combine column selection with locked devices
-tsa list --locked --columns hostname,status,locked
+tsa devices list --locked --columns hostname,status,locked
 
 # Output as JSON (useful for scripting)
-tsa list --json
+tsa devices list --json
 
 # Output locked devices as JSON
-tsa list --locked --json
+tsa devices list --locked --json
 
 # Pipe JSON output to jq for filtering
-tsa list --json | jq '.[] | select(.os == "linux")'
+tsa devices list --json | jq '.[] | select(.os == "linux")'
 
 # Get just hostnames of online devices using jq
-tsa list --json | jq -r '.[] | select(.lastSeen == "") | .hostname'
+tsa devices list --json | jq -r '.[] | select(.lastSeen == "") | .hostname'
 
 # Set tags on a specific device
-tsa update-tags -d myserver -t tag:prod,tag:web
+tsa devices update-tags -d myserver -t tag:prod,tag:web
 
 # Add a tag to all devices matching "server"
-tsa add-tags -d server -t tag:monitored
+tsa devices add-tags -d server -t tag:monitored
 
 # Remove a tag from multiple devices (skip confirmation)
 tsa -y remove-tags -d server -t tag:deprecated
 
 # Use multiple patterns
-tsa add-tags -d web,api,db -t tag:production
+tsa devices add-tags -d web,api,db -t tag:production
 
 # Tags can be specified with or without the "tag:" prefix
-tsa add-tags -d myserver -t prod,web
+tsa devices add-tags -d myserver -t prod,web
 # equivalent to:
-tsa add-tags -d myserver -t tag:prod,tag:web
+tsa devices add-tags -d myserver -t tag:prod,tag:web
+
+# Interactive device selection examples
+# Add tags interactively (displays numbered list)
+tsa devices add-tags -t tag:monitored
+# Then enter: 1 3 5 (to select devices 1, 3, and 5)
+
+# Sign devices interactively
+tsa devices sign
+# Then enter: 1-5 10 (to select devices 1 through 5, and device 10)
+
+# Update tags for all devices interactively
+tsa devices update-tags -t tag:production
+# Then enter: all (to select all devices)
 ```
+
+## User Management
+
+You can manage users in your tailnet using the `tsa` CLI.
+
+### List Users
+
+```bash
+# List all users in the tailnet
+tsa users list
+
+# Output as JSON
+tsa users list --json
+```
+
+The user list displays:
+- Login name (email)
+- Display name
+- Role (owner, admin, member, etc.)
+- Status (active, suspended, etc.)
+- Device count
+- Currently active status
+
+### User Operations
+
+```bash
+# Approve a pending user
+tsa users approve -u user@example.com
+
+# Suspend a user (prevents tailnet access)
+tsa users suspend -u user@example.com
+
+# Restore a suspended user
+tsa users restore -u user@example.com
+
+# Delete a user from the tailnet (permanent action)
+tsa users delete -u user@example.com
+
+# Skip confirmation prompts
+tsa -y delete-user -u user@example.com
+```
+
+### Tailnet Contacts
+
+View or list the tailnet's contact information:
+
+```bash
+# List all contacts (account, support, security)
+tsa contacts list
+
+# Output as JSON
+tsa contacts list --json
+```
+
+### User Matching
+
+When specifying users with the `-u` flag, you can match by:
+1. Exact user ID
+2. Exact login name (email)
+3. Case-insensitive login name
+4. Partial match on login name or display name
+
+If multiple users match, you'll see a table of matches and be asked to provide a more specific pattern.
 
 ## Tailnet Lock Signing
 
@@ -147,10 +289,11 @@ If you have [Tailnet Lock](https://tailscale.com/kb/1226/tailnet-lock) enabled, 
 ### Sign Commands
 
 ```bash
-# List all devices with their lock keys (to see what can be signed)
-tsa sign
+# Interactive device selection (displays numbered list)
+tsa devices sign
+# Then enter device numbers: 1 3 5, or 1-5, or all
 
-# Sign specific devices
+# Sign specific devices by pattern
 tsa sign -d myserver
 
 # Sign all devices matching a pattern

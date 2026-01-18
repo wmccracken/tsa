@@ -1,7 +1,9 @@
-mod list;
-mod sign;
-mod tags;
+mod contacts;
+mod devices;
+mod users;
 
-pub use list::run_list;
-pub use sign::run_sign;
-pub use tags::{run_add_tags, run_remove_tags, run_update_tags};
+pub use contacts::run_list_contacts;
+pub use devices::{run_add_tags, run_list, run_remove_tags, run_sign, run_update_tags};
+pub use users::{
+    run_approve_user, run_delete_user, run_list_users, run_restore_user, run_suspend_user,
+};
