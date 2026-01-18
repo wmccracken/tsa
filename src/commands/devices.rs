@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
+use comfy_table::{presets::NOTHING, Cell, Color, ContentArrangement, Table};
 use std::process::Command;
 
 use crate::api::TailscaleClient;
@@ -13,12 +14,25 @@ use crate::utils::{
 
 pub async fn run_list(
     client: &TailscaleClient,
+    device_patterns: Option<&[String]>,
     locked: bool,
     columns: Option<Vec<String>>,
     no_paging: bool,
     json: bool,
 ) -> Result<()> {
-    let devices = client.list_devices().await?;
+    let all_devices = client.list_devices().await?;
+
+    // Filter by device patterns if provided
+    let devices = if let Some(patterns) = device_patterns {
+        let matched = resolve_device_patterns(patterns, &all_devices);
+        if matched.is_empty() {
+            print_warning("No devices matched the given pattern(s).");
+            return Ok(());
+        }
+        matched
+    } else {
+        all_devices
+    };
 
     // If JSON output is requested, print JSON and return
     if json {
@@ -370,5 +384,255 @@ pub async fn run_sign(
     }
 
     println!("\n{}", "Done!".green().bold());
+    Ok(())
+}
+
+pub async fn run_delete(
+    client: &TailscaleClient,
+    device_patterns: Option<&[String]>,
+    skip_confirm: bool,
+) -> Result<()> {
+    let all_devices = client.list_devices().await?;
+
+    // Filter devices by pattern if provided, otherwise use all devices
+    let filtered_devices = if let Some(patterns) = device_patterns {
+        let matched = resolve_device_patterns(patterns, &all_devices);
+        if matched.is_empty() {
+            print_warning("No devices matched the given pattern(s).");
+            return Ok(());
+        }
+        matched
+    } else {
+        all_devices
+    };
+
+    // Show interactive selection from filtered devices
+    print_info(&format!(
+        "Found {} device(s):",
+        filtered_devices.len().to_string().cyan()
+    ));
+
+    let to_delete = select_devices_interactive(&filtered_devices)
+        .context("Failed to read device selection")?;
+
+    if to_delete.is_empty() {
+        print_warning("No devices selected.");
+        return Ok(());
+    }
+
+    println!(
+        "{} {} {}",
+        "✗".red().bold(),
+        "Devices to delete:".red(),
+        to_delete.len().to_string().red().bold()
+    );
+    println!();
+    print_devices_table(&to_delete, None);
+    println!();
+    println!(
+        "{} This action {} and will remove the device(s) from the tailnet.",
+        "⚠".red().bold(),
+        "CANNOT BE UNDONE".red().bold()
+    );
+    println!();
+
+    if !skip_confirm && !confirm("Are you sure you want to delete these devices?") {
+        print_warning("Aborted.");
+        return Ok(());
+    }
+
+    println!();
+    for device in &to_delete {
+        match client.delete_device(&device.id).await {
+            Ok(()) => print_success(&device.hostname, "deleted"),
+            Err(e) => print_error(&device.hostname, &format!("failed: {}", e)),
+        }
+    }
+
+    println!("\n{}", "Done!".green().bold());
+    Ok(())
+}
+
+pub async fn run_info(
+    client: &TailscaleClient,
+    device_pattern: &str,
+    json: bool,
+) -> Result<()> {
+    let all_devices = client.list_devices().await?;
+
+    // Find the device by pattern
+    let matched = resolve_device_patterns(&[device_pattern.to_string()], &all_devices);
+
+    if matched.is_empty() {
+        print_warning(&format!("No device found matching pattern: {}", device_pattern));
+        return Ok(());
+    }
+
+    if matched.len() > 1 {
+        print_warning(&format!(
+            "Multiple devices matched pattern '{}'. Please be more specific.",
+            device_pattern
+        ));
+        println!();
+        print_devices_table(&matched, None);
+        return Ok(());
+    }
+
+    let device = &matched[0];
+
+    // Get full device details
+    let device_details = client.get_device(&device.id).await?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&device_details)?);
+        return Ok(());
+    }
+
+    // Display formatted device information
+    println!();
+    println!("{} {}", "Device Information".bold().cyan(), format!("({})", device_details.id).dimmed());
+    println!();
+
+    let mut table = Table::new();
+    table
+        .load_preset(NOTHING)
+        .set_content_arrangement(ContentArrangement::Dynamic);
+
+    table.add_row(vec![
+        Cell::new("Name:").fg(Color::Cyan),
+        Cell::new(&device_details.name),
+    ]);
+
+    table.add_row(vec![
+        Cell::new("Hostname:").fg(Color::Cyan),
+        Cell::new(&device_details.hostname),
+    ]);
+
+    table.add_row(vec![
+        Cell::new("Owner:").fg(Color::Cyan),
+        Cell::new(device_details.owner()),
+    ]);
+
+    table.add_row(vec![
+        Cell::new("OS:").fg(Color::Cyan),
+        Cell::new(&device_details.os),
+    ]);
+
+    let status_value = if device_details.is_online() {
+        "● online".green().to_string()
+    } else {
+        "○ offline".to_string()
+    };
+    table.add_row(vec![
+        Cell::new("Status:").fg(Color::Cyan),
+        Cell::new(status_value),
+    ]);
+
+    if device_details.is_locked_out() {
+        table.add_row(vec![
+            Cell::new("Locked:").fg(Color::Cyan),
+            Cell::new("✗ yes".red()),
+        ]);
+    }
+
+    if !device_details.tags.is_empty() {
+        table.add_row(vec![
+            Cell::new("Tags:").fg(Color::Cyan),
+            Cell::new(format_tags(&device_details.tags)),
+        ]);
+    }
+
+    if !device_details.last_seen.is_empty() {
+        table.add_row(vec![
+            Cell::new("Last Seen:").fg(Color::Cyan),
+            Cell::new(&device_details.last_seen),
+        ]);
+    }
+
+    if device_details.blocks_incoming_connections {
+        table.add_row(vec![
+            Cell::new("Blocks Incoming:").fg(Color::Cyan),
+            Cell::new("yes").fg(Color::Yellow),
+        ]);
+    }
+
+    if !device_details.node_key.is_empty() {
+        table.add_row(vec![
+            Cell::new("Node Key:").fg(Color::Cyan),
+            Cell::new(&device_details.node_key).fg(Color::DarkGrey),
+        ]);
+    }
+
+    if !device_details.tailnet_lock_key.is_empty() {
+        table.add_row(vec![
+            Cell::new("Tailnet Lock Key:").fg(Color::Cyan),
+            Cell::new(&device_details.tailnet_lock_key).fg(Color::DarkGrey),
+        ]);
+    }
+
+    if !device_details.tailnet_lock_error.is_empty() {
+        table.add_row(vec![
+            Cell::new("Lock Error:").fg(Color::Cyan),
+            Cell::new(&device_details.tailnet_lock_error).fg(Color::Red),
+        ]);
+    }
+
+    println!("{}", table);
+    println!();
+
+    Ok(())
+}
+
+pub async fn run_rename(
+    client: &TailscaleClient,
+    device_pattern: &str,
+    new_name: &str,
+    skip_confirm: bool,
+) -> Result<()> {
+    let all_devices = client.list_devices().await?;
+
+    // Find the device by pattern
+    let matched = resolve_device_patterns(&[device_pattern.to_string()], &all_devices);
+
+    if matched.is_empty() {
+        print_warning(&format!("No device found matching pattern: {}", device_pattern));
+        return Ok(());
+    }
+
+    if matched.len() > 1 {
+        print_warning(&format!(
+            "Multiple devices matched pattern '{}'. Please be more specific.",
+            device_pattern
+        ));
+        println!();
+        print_devices_table(&matched, None);
+        return Ok(());
+    }
+
+    let device = &matched[0];
+
+    print_info(&format!(
+        "Renaming device {} → {}",
+        device.name.cyan(),
+        new_name.green()
+    ));
+    println!();
+    println!("  {} {}", "ID:".dimmed(), device.id.dimmed());
+    println!("  {} {}", "Hostname:".dimmed(), device.hostname.dimmed());
+    println!();
+
+    if !skip_confirm && !confirm("Proceed with rename?") {
+        print_warning("Aborted.");
+        return Ok(());
+    }
+
+    match client.rename_device(&device.id, new_name.to_string()).await {
+        Ok(()) => {
+            println!();
+            print_success(&device.hostname, &format!("renamed to {}", new_name.green()));
+        }
+        Err(e) => print_error(&device.hostname, &format!("failed: {}", e)),
+    }
+
     Ok(())
 }

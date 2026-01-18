@@ -79,6 +79,24 @@ tsa users restore -u user@example.com
 
 # Delete a user
 tsa users delete -u user@example.com
+
+# Display detailed information about a device
+tsa devices info <device-pattern>
+
+# Display device info as JSON
+tsa devices info <device-pattern> --json
+
+# Rename a device
+tsa devices rename <device-pattern> <new-name>
+
+# Rename without confirmation
+tsa -y devices rename myserver web-server-01
+
+# Delete devices (with interactive selection)
+tsa devices delete
+
+# Delete specific devices by pattern
+tsa devices delete -d <device-pattern>
 ```
 
 ### Options
@@ -87,7 +105,18 @@ tsa users delete -u user@example.com
 |------|-------------|
 | `-a, --api-key` | Tailscale API key |
 | `-n, --tailnet` | Tailnet name (default: `-`) |
-| `-y, --yes` | Skip confirmation prompts |
+| `-y, --yes` | Skip confirmation prompts (global flag, place before subcommand) |
+
+**Note about `-y` flag:** The `-y/--yes` flag is a global option and must be placed **before** the subcommand:
+```bash
+# Correct usage
+tsa -y devices rename myserver newserver
+tsa -y devices delete -d oldserver
+
+# Incorrect usage (will not work)
+tsa devices rename -y myserver newserver
+tsa devices delete -d oldserver -y
+```
 
 ### Device Matching
 
@@ -100,6 +129,12 @@ Devices can be specified by name, hostname, or ID. The matching priority is:
 5. Partial match (contains) - returns **all matching devices**
 
 When multiple devices match a pattern, you'll be shown the list and asked to confirm before proceeding.
+
+**Note:** Device patterns can contain hyphens. If a pattern starts with a hyphen (e.g., `-gpu-1`), use the `-d` flag with the value directly:
+```bash
+tsa devices list -d -gpu-1
+tsa devices info -gpu-server
+```
 
 ### Interactive Device Selection
 
@@ -148,6 +183,73 @@ Available columns:
 - `tailnet_lock_error` (or `lock_error`) - Tailnet lock error message
 - `blocks_incoming_connections` (or `blocks_incoming`) - Whether device blocks incoming connections
 - Use `--json` to output data as JSON instead of a table (useful for scripting and piping to tools like `jq`)
+
+## Device Management
+
+### Device Information
+
+Display detailed information about a specific device:
+
+```bash
+# Show device details
+tsa devices info myserver
+
+# Output as JSON for scripting
+tsa devices info myserver --json
+
+# Find device by various patterns
+tsa devices info web-01          # by name
+tsa devices info hostname.domain # by hostname
+tsa devices info 12345          # by device ID
+```
+
+The `info` command displays:
+- Device name and hostname
+- Owner (user email)
+- Operating system
+- Online/offline status
+- Tailnet lock status (if applicable)
+- Tags
+- Last seen timestamp
+- Node keys and lock keys (if present)
+- Any lock errors
+
+### Rename Device
+
+Rename a device in your tailnet:
+
+```bash
+# Rename a device
+tsa devices rename myserver new-server-name
+
+# Rename without confirmation
+tsa -y devices rename old-name new-name
+```
+
+### Delete Devices
+
+Delete devices from your tailnet:
+
+```bash
+# Delete with interactive selection
+tsa devices delete
+
+# Delete specific devices by pattern
+tsa devices delete -d myserver
+
+# Filter by pattern, then select interactively
+tsa devices delete -d server
+# Shows only devices matching "server" for selection
+
+# Delete without confirmation (use with caution!)
+tsa -y devices delete -d old-server
+```
+
+The delete command:
+- Shows a warning that the action cannot be undone
+- Displays the devices that will be deleted
+- Requires confirmation unless `-y` flag is used
+- Supports both direct pattern matching and interactive selection
 
 ### Examples
 
@@ -214,6 +316,33 @@ tsa devices sign
 # Update tags for all devices interactively
 tsa devices update-tags -t tag:production
 # Then enter: all (to select all devices)
+
+# Display detailed information about a device
+tsa devices info myserver
+tsa devices info web-01
+tsa devices info 12345  # by device ID
+
+# Get device info as JSON for scripting
+tsa devices info myserver --json | jq '.tags'
+
+# Rename a device
+tsa devices rename old-name new-name
+tsa devices rename myserver web-server-01
+
+# Rename without confirmation
+tsa -y devices rename myserver production-web-01
+
+# Delete devices interactively
+tsa devices delete
+# Then select devices by number: 1 3 5 or 1-5
+
+# Delete specific devices by pattern
+tsa devices delete -d myserver
+tsa devices delete -d "old-*"
+
+# Delete with pattern filter, then interactive selection
+tsa devices delete -d server
+# This shows only devices matching "server" for selection
 ```
 
 ## User Management

@@ -70,6 +70,11 @@ pub struct UpdateTagsRequest {
     pub tags: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct RenameDeviceRequest {
+    pub name: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UsersResponse {
     pub users: Vec<User>,
