@@ -1,6 +1,10 @@
 # tsa - Tailscale CLI Tool
 
-A command-line tool written in `Rust` for managing device tags and signing locked-out nodes on your Tailscale network.
+A command-line tool written in Rust for managing your Tailscale network.
+
+## Notice
+
+This application is currently under development and should be considered alpha release quality. I'm using it daily for Tailscale admin tasks but am also planning to make frequent updates.
 
 ## Installation
 
@@ -27,87 +31,17 @@ Optionally, set your tailnet name:
 - Command-line flag: `-n` or `--tailnet`
 - Default: `-` (uses the default tailnet for your API key)
 
-## Usage
-
-```bash
-# Check version
-tsa --version
-# or
-tsa -V
-
-# List all devices (with automatic paging)
-tsa devices list
-
-# List all devices without paging
-tsa devices list --no-paging
-
-# List only specific columns
-tsa devices list --columns hostname,status,locked
-
-# List locked-out devices (tailnet lock)
-tsa devices list --locked
-
-# Update tags (replaces existing tags)
-tsa devices update-tags -d <device-pattern> -t <tags>
-
-# Add tags with interactive device selection
-tsa devices add-tags -t <tags>
-
-# Remove tags
-tsa devices remove-tags -d <device-pattern> -t <tags>
-
-# Sign locked-out devices (tailnet lock)
-tsa devices sign -d <device-pattern>
-
-# Sign with interactive device selection
-tsa devices sign
-
-# List users in the tailnet
-tsa users list
-
-# List tailnet contacts
-tsa contacts list
-
-# Approve a user
-tsa users approve -u user@example.com
-
-# Suspend a user
-tsa users suspend -u user@example.com
-
-# Restore a suspended user
-tsa users restore -u user@example.com
-
-# Delete a user
-tsa users delete -u user@example.com
-
-# Display detailed information about a device
-tsa devices info <device-pattern>
-
-# Display device info as JSON
-tsa devices info <device-pattern> --json
-
-# Rename a device
-tsa devices rename <device-pattern> <new-name>
-
-# Rename without confirmation
-tsa -y devices rename myserver web-server-01
-
-# Delete devices (with interactive selection)
-tsa devices delete
-
-# Delete specific devices by pattern
-tsa devices delete -d <device-pattern>
-```
-
-### Options
+## Global Options
 
 | Flag | Description |
 |------|-------------|
 | `-a, --api-key` | Tailscale API key |
 | `-n, --tailnet` | Tailnet name (default: `-`) |
-| `-y, --yes` | Skip confirmation prompts (global flag, place before subcommand) |
+| `-y, --yes` | Skip confirmation prompts |
+| `-V, --version` | Display version information |
 
-**Note about `-y` flag:** The `-y/--yes` flag is a global option and must be placed **before** the subcommand:
+**Note:** The `-y/--yes` flag is a global option and must be placed **before** the subcommand:
+
 ```bash
 # Correct usage
 tsa -y devices rename myserver newserver
@@ -115,12 +49,11 @@ tsa -y devices delete -d oldserver
 
 # Incorrect usage (will not work)
 tsa devices rename -y myserver newserver
-tsa devices delete -d oldserver -y
 ```
 
-### Device Matching
+## Device Matching
 
-Devices can be specified by name, hostname, or ID. The matching priority is:
+Device commands accept patterns that match by name, hostname, or ID. The matching priority is:
 
 1. Exact match on device ID
 2. Exact match on name
@@ -130,45 +63,56 @@ Devices can be specified by name, hostname, or ID. The matching priority is:
 
 When multiple devices match a pattern, you'll be shown the list and asked to confirm before proceeding.
 
-**Note:** Device patterns can contain hyphens. If a pattern starts with a hyphen (e.g., `-gpu-1`), use the `-d` flag with the value directly:
-```bash
-tsa devices list -d -gpu-1
-tsa devices info -gpu-server
-```
-
-### Interactive Device Selection
-
-When you run certain commands without specifying device patterns (or omit the `-d` flag), you'll be presented with an interactive device selector, similar to tools like `yay`:
+**Note:** If a pattern starts with a hyphen (e.g., `-gpu-1`), use the `-d` flag:
 
 ```bash
-# Interactive selection for signing
-tsa devices sign
-
-# Interactive selection for tag operations
-tsa devices add-tags -t tag:prod
-tsa devices update-tags -t tag:server
-tsa devices remove-tags -t tag:deprecated
+tsa devices info -d -gpu-server
 ```
 
-The interactive selector displays a numbered list of devices and accepts:
+## Interactive Selection
+
+When you run certain commands without specifying device patterns (or omit the `-d` flag), you'll be presented with an interactive device selector. The selector accepts:
+
 - **Single numbers**: `1 3 5` - selects devices 1, 3, and 5
 - **Ranges**: `1-5` - selects devices 1 through 5
 - **Combinations**: `1 3-7 10` - selects device 1, devices 3-7, and device 10
 - **All devices**: `all` or `*` - selects all devices
 - **Cancel**: empty input or `none` - cancels the operation
 
-### List Command
+---
 
-The `list` command automatically pages output to fit your terminal size, similar to `less` or `more`:
+## Subcommand: `devices list`
 
-- If the output fits on one screen, it displays directly
-- If the output is longer, it shows one page at a time with interactive controls:
-  - Press `Space` or `Enter` to see the next page
+List all devices in the tailnet.
+
+```bash
+tsa devices list
+tsa devices list --no-paging
+tsa devices list --columns hostname,status,locked
+tsa devices list --locked
+tsa devices list --json
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--no-paging` | Disable automatic paging |
+| `--columns <cols>` | Select which columns to display |
+| `--locked` | Show only locked-out devices |
+| `--json` | Output as JSON |
+
+### Paging
+
+Output automatically pages to fit your terminal size:
+
+- If output fits on one screen, it displays directly
+- If longer, shows one page at a time:
+  - Press `Space` or `Enter` for next page
   - Press `q` or `Esc` to quit
-- Use `--no-paging` to disable paging and show all results at once
-- Use `--columns` to select which columns to display
 
-Available columns:
+### Available Columns
+
 - `id` - Device ID
 - `hostname` - Device hostname
 - `name` - Device name
@@ -182,26 +126,37 @@ Available columns:
 - `tailnet_lock_key` (or `lock_key`) - Tailnet lock key
 - `tailnet_lock_error` (or `lock_error`) - Tailnet lock error message
 - `blocks_incoming_connections` (or `blocks_incoming`) - Whether device blocks incoming connections
-- Use `--json` to output data as JSON instead of a table (useful for scripting and piping to tools like `jq`)
 
-## Device Management
-
-### Device Information
-
-Display detailed information about a specific device:
+### Examples
 
 ```bash
-# Show device details
-tsa devices info myserver
+# Show only specific columns
+tsa devices list --columns hostname,name,status
 
-# Output as JSON for scripting
-tsa devices info myserver --json
+# Show lock-related information
+tsa devices list --columns hostname,locked,tailnet_lock_error
 
-# Find device by various patterns
-tsa devices info web-01          # by name
-tsa devices info hostname.domain # by hostname
-tsa devices info 12345          # by device ID
+# Pipe JSON output to jq for filtering
+tsa devices list --json | jq '.[] | select(.os == "linux")'
 ```
+
+---
+
+# Device Management
+
+## Device Information
+Display detailed information about a specific device.
+
+```bash
+tsa devices info <device-pattern>
+tsa devices info myserver --json
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
 
 The `info` command displays:
 - Device name and hostname
@@ -214,24 +169,25 @@ The `info` command displays:
 - Node keys and lock keys (if present)
 - Any lock errors
 
-### Rename Device
+---
 
-Rename a device in your tailnet:
+## Device Renaming
+
+Rename a device in your tailnet.
 
 ```bash
-# Rename a device
-tsa devices rename myserver new-server-name
-
-# Rename without confirmation
-tsa -y devices rename old-name new-name
+tsa devices rename <device-pattern> <new-name>
+tsa -y devices rename myserver web-server-01
 ```
 
-### Delete Devices
+---
 
-Delete devices from your tailnet:
+## Device Deletion
+
+Delete devices from your tailnet.
 
 ```bash
-# Delete with interactive selection
+# Interactive selection
 tsa devices delete
 
 # Delete specific devices by pattern
@@ -239,125 +195,135 @@ tsa devices delete -d myserver
 
 # Filter by pattern, then select interactively
 tsa devices delete -d server
-# Shows only devices matching "server" for selection
 
-# Delete without confirmation (use with caution!)
+# Skip confirmation
 tsa -y devices delete -d old-server
 ```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-d <pattern>` | Device pattern to match |
 
 The delete command:
 - Shows a warning that the action cannot be undone
 - Displays the devices that will be deleted
 - Requires confirmation unless `-y` flag is used
-- Supports both direct pattern matching and interactive selection
 
-### Examples
+---
+
+## Update Device Tags
+
+Replace all tags on a device with the specified tags.
 
 ```bash
-# List all devices (with automatic paging)
-tsa devices list
-
-# List without paging
-tsa devices list --no-paging
-
-# Show only specific columns
-tsa devices list --columns hostname,name,status
-
-# Show device IDs and tags
-tsa devices list --columns id,hostname,tags
-
-# Show lock-related information
-tsa devices list --columns hostname,locked,tailnet_lock_error
-
-# Show all device details
-tsa devices list --columns id,hostname,name,owner,os,status,tags,last_seen
-
-# Combine column selection with locked devices
-tsa devices list --locked --columns hostname,status,locked
-
-# Output as JSON (useful for scripting)
-tsa devices list --json
-
-# Output locked devices as JSON
-tsa devices list --locked --json
-
-# Pipe JSON output to jq for filtering
-tsa devices list --json | jq '.[] | select(.os == "linux")'
-
-# Get just hostnames of online devices using jq
-tsa devices list --json | jq -r '.[] | select(.lastSeen == "") | .hostname'
-
-# Set tags on a specific device
-tsa devices update-tags -d myserver -t tag:prod,tag:web
-
-# Add a tag to all devices matching "server"
-tsa devices add-tags -d server -t tag:monitored
-
-# Remove a tag from multiple devices (skip confirmation)
-tsa -y remove-tags -d server -t tag:deprecated
-
-# Use multiple patterns
-tsa devices add-tags -d web,api,db -t tag:production
-
-# Tags can be specified with or without the "tag:" prefix
-tsa devices add-tags -d myserver -t prod,web
-# equivalent to:
-tsa devices add-tags -d myserver -t tag:prod,tag:web
-
-# Interactive device selection examples
-# Add tags interactively (displays numbered list)
-tsa devices add-tags -t tag:monitored
-# Then enter: 1 3 5 (to select devices 1, 3, and 5)
-
-# Sign devices interactively
-tsa devices sign
-# Then enter: 1-5 10 (to select devices 1 through 5, and device 10)
-
-# Update tags for all devices interactively
-tsa devices update-tags -t tag:production
-# Then enter: all (to select all devices)
-
-# Display detailed information about a device
-tsa devices info myserver
-tsa devices info web-01
-tsa devices info 12345  # by device ID
-
-# Get device info as JSON for scripting
-tsa devices info myserver --json | jq '.tags'
-
-# Rename a device
-tsa devices rename old-name new-name
-tsa devices rename myserver web-server-01
-
-# Rename without confirmation
-tsa -y devices rename myserver production-web-01
-
-# Delete devices interactively
-tsa devices delete
-# Then select devices by number: 1 3 5 or 1-5
-
-# Delete specific devices by pattern
-tsa devices delete -d myserver
-tsa devices delete -d "old-*"
-
-# Delete with pattern filter, then interactive selection
-tsa devices delete -d server
-# This shows only devices matching "server" for selection
+tsa devices update-tags -d <device-pattern> -t <tags>
+tsa devices update-tags -t tag:server  # interactive selection
 ```
 
-## User Management
+### Options
 
-You can manage users in your tailnet using the `tsa` CLI.
+| Flag | Description |
+|------|-------------|
+| `-d <pattern>` | Device pattern to match |
+| `-t <tags>` | Comma-separated list of tags |
 
-### List Users
+Tags can be specified with or without the `tag:` prefix:
 
 ```bash
-# List all users in the tailnet
-tsa users list
+tsa devices update-tags -d myserver -t prod,web
+# equivalent to:
+tsa devices update-tags -d myserver -t tag:prod,tag:web
+```
 
-# Output as JSON
+---
+
+## Add Device Tags
+
+Add tags to a device without removing existing tags.
+
+```bash
+tsa devices add-tags -d <device-pattern> -t <tags>
+tsa devices add-tags -t tag:monitored  # interactive selection
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-d <pattern>` | Device pattern to match (optional for interactive selection) |
+| `-t <tags>` | Comma-separated list of tags to add |
+
+---
+
+## Remove Device Tags
+
+Remove specific tags from a device.
+
+```bash
+tsa devices remove-tags -d <device-pattern> -t <tags>
+tsa -y devices remove-tags -d server -t tag:deprecated
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-d <pattern>` | Device pattern to match |
+| `-t <tags>` | Comma-separated list of tags to remove |
+
+---
+
+## Signing Devices
+
+Sign locked-out devices for [Tailnet Lock](https://tailscale.com/kb/1226/tailnet-lock).
+
+This requires:
+1. The machine running `tsa` must be a **signing node** (have a trusted Tailnet Lock key)
+2. The `tailscale` CLI must be installed and accessible
+
+```bash
+# Interactive selection
+tsa devices sign
+
+# Sign specific devices
+tsa devices sign -d <device-pattern>
+
+# Skip confirmation
+tsa -y devices sign -d server
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-d <pattern>` | Device pattern to match (optional for interactive selection) |
+
+The `sign` command will:
+1. Fetch devices from the API with their `nodeKey` and `tailnetLockKey`
+2. Show the devices that will be signed
+3. Ask for confirmation
+4. Execute `tailscale lock sign <nodeKey> <tailnetLockKey>` for each device
+
+---
+
+# User Management
+
+## Listing Users
+
+List all users in the tailnet.
+
+```bash
+tsa users list
 tsa users list --json
 ```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
 
 The user list displays:
 - Login name (email)
@@ -367,35 +333,45 @@ The user list displays:
 - Device count
 - Currently active status
 
-### User Operations
+---
+
+## Approving Users
+
+Approve a pending user.
 
 ```bash
-# Approve a pending user
 tsa users approve -u user@example.com
-
-# Suspend a user (prevents tailnet access)
-tsa users suspend -u user@example.com
-
-# Restore a suspended user
-tsa users restore -u user@example.com
-
-# Delete a user from the tailnet (permanent action)
-tsa users delete -u user@example.com
-
-# Skip confirmation prompts
-tsa -y delete-user -u user@example.com
 ```
 
-### Tailnet Contacts
+---
 
-View or list the tailnet's contact information:
+## Suspending Users
+
+Suspend a user, preventing tailnet access.
 
 ```bash
-# List all contacts (account, support, security)
-tsa contacts list
+tsa users suspend -u user@example.com
+```
 
-# Output as JSON
-tsa contacts list --json
+---
+
+## Restoring Users
+
+Restore a suspended user.
+
+```bash
+tsa users restore -u user@example.com
+```
+
+---
+
+## Deleting Users
+
+Delete a user from the tailnet (permanent action).
+
+```bash
+tsa users delete -u user@example.com
+tsa -y users delete -u user@example.com
 ```
 
 ### User Matching
@@ -408,35 +384,28 @@ When specifying users with the `-u` flag, you can match by:
 
 If multiple users match, you'll see a table of matches and be asked to provide a more specific pattern.
 
-## Tailnet Lock Signing
+---
 
-If you have [Tailnet Lock](https://tailscale.com/kb/1226/tailnet-lock) enabled, you can use `tsa` to sign locked-out devices. This requires:
+# Contacts
 
-1. The machine running `tsa` must be a **signing node** (have a trusted Tailnet Lock key)
-2. The `tailscale` CLI must be installed and accessible
+## List Contacts
 
-### Sign Commands
+List the tailnet's contact information.
 
 ```bash
-# Interactive device selection (displays numbered list)
-tsa devices sign
-# Then enter device numbers: 1 3 5, or 1-5, or all
-
-# Sign specific devices by pattern
-tsa sign -d myserver
-
-# Sign all devices matching a pattern
-tsa sign -d server
-
-# Sign without confirmation
-tsa -y sign -d server
+tsa contacts list
+tsa contacts list --json
 ```
 
-The `sign` command will:
-1. Fetch devices from the API with their `nodeKey` and `tailnetLockKey`
-2. Show the devices that will be signed
-3. Ask for confirmation
-4. Execute `tailscale lock sign <nodeKey> <tailnetLockKey>` for each device
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output as JSON |
+
+Displays account, support, and security contacts.
+
+---
 
 ## Notes
 
