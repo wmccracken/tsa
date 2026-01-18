@@ -1,5 +1,5 @@
 use anyhow::Result;
-use comfy_table::{presets::UTF8_FULL_CONDENSED, Cell, Color, ContentArrangement, Table};
+use comfy_table::{Cell, Color, ContentArrangement, Table, presets::UTF8_FULL_CONDENSED};
 
 use crate::api::TailscaleClient;
 use crate::utils::print_info;

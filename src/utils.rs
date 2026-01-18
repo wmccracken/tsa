@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io::{self, Write};
 
 use colored::Colorize;
-use comfy_table::{presets::UTF8_FULL_CONDENSED, Cell, Color, ContentArrangement, Table};
+use comfy_table::{Cell, Color, ContentArrangement, Table, presets::UTF8_FULL_CONDENSED};
 use console::Term;
 use dialoguer::{Confirm, Input};
 
@@ -105,12 +105,7 @@ pub fn print_success(device: &str, message: &str) {
 }
 
 pub fn print_error(device: &str, message: &str) {
-    println!(
-        "  {} {} {}",
-        "✗".red().bold(),
-        device.cyan(),
-        message.red()
-    );
+    println!("  {} {} {}", "✗".red().bold(), device.cyan(), message.red());
 }
 
 pub fn print_warning(message: &str) {
@@ -379,11 +374,7 @@ pub fn display_with_pager(content: &str, no_paging: bool) -> io::Result<()> {
 
             // Show prompt at the bottom
             if at_end {
-                print!(
-                    "{}",
-                    format!("-- End -- (press q to quit)")
-                        .dimmed()
-                );
+                print!("{}", format!("-- End -- (press q to quit)").dimmed());
             } else {
                 let remaining = lines.len() - end_line;
                 print!(
@@ -795,9 +786,7 @@ mod tests {
 
     #[test]
     fn test_build_devices_table_default_columns() {
-        let devices = vec![
-            create_test_device("123", "device1", "host1"),
-        ];
+        let devices = vec![create_test_device("123", "device1", "host1")];
         let table = build_devices_table(&devices, None);
         assert!(table.contains("host1"));
         assert!(table.contains("Hostname"));
@@ -805,9 +794,7 @@ mod tests {
 
     #[test]
     fn test_build_devices_table_custom_columns() {
-        let devices = vec![
-            create_test_device("123", "device1", "host1"),
-        ];
+        let devices = vec![create_test_device("123", "device1", "host1")];
         let columns = vec!["id".to_string(), "name".to_string()];
         let table = build_devices_table(&devices, Some(&columns));
         assert!(table.contains("123"));

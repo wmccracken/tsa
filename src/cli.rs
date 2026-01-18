@@ -48,7 +48,9 @@ pub enum DeviceCommands {
         #[arg(long)]
         locked: bool,
 
-        /// Columns to display (comma-separated). Available: id, hostname, name, owner, os, status, locked, tags, last_seen, node_key, tailnet_lock_key, tailnet_lock_error, blocks_incoming_connections
+        /// Columns to display (comma-separated). Available: id, hostname, name,
+        /// owner, os, status, locked, tags, last_seen, node_key, tailnet_lock_key,
+        /// tailnet_lock_error, blocks_incoming_connections
         #[arg(long, value_delimiter = ',')]
         columns: Option<Vec<String>>,
 
@@ -61,9 +63,10 @@ pub enum DeviceCommands {
         json: bool,
     },
 
-    /// Update tags on specified devices (replaces existing tags; use -y before 'devices' to skip confirmation)
+    /// Update tags on specified devices (replaces existing tags)
     UpdateTags {
-        /// Device patterns to match (comma-separated or multiple flags). If not specified, interactive selection will be prompted.
+        /// Device patterns to match (comma-separated or multiple flags).
+        ///  If not specified, interactive selection will be prompted.
         #[arg(short, long, value_delimiter = ',', allow_hyphen_values = true)]
         devices: Option<Vec<String>>,
 
@@ -72,9 +75,10 @@ pub enum DeviceCommands {
         tags: Vec<String>,
     },
 
-    /// Add tags to specified devices (keeps existing tags; use -y before 'devices' to skip confirmation)
+    /// Add tags to specified devices (keeps existing tags)
     AddTags {
-        /// Device patterns to match (comma-separated or multiple flags). If not specified, interactive selection will be prompted.
+        /// Device patterns to match (comma-separated or multiple flags).
+        /// If not specified, interactive selection will be prompted.
         #[arg(short, long, value_delimiter = ',', allow_hyphen_values = true)]
         devices: Option<Vec<String>>,
 
@@ -83,9 +87,10 @@ pub enum DeviceCommands {
         tags: Vec<String>,
     },
 
-    /// Remove tags from specified devices (use -y before 'devices' to skip confirmation)
+    /// Remove tags from specified devices
     RemoveTags {
-        /// Device patterns to match (comma-separated or multiple flags). If not specified, interactive selection will be prompted.
+        // Device patterns to match (comma-separated or multiple flags).
+        // If not specified, interactive selection will be prompted.
         #[arg(short, long, value_delimiter = ',', allow_hyphen_values = true)]
         devices: Option<Vec<String>>,
 
@@ -94,16 +99,18 @@ pub enum DeviceCommands {
         tags: Vec<String>,
     },
 
-    /// Sign locked-out devices using tailnet lock (requires this machine to be a signing node; use -y before 'devices' to skip confirmation)
+    // Sign locked-out devices using tailnet lock (requires this machine to be a signing node)
     Sign {
-        /// Device patterns to match (comma-separated or multiple flags). If not specified, interactive selection will be prompted.
+        // Device patterns to match (comma-separated or multiple flags).
+        // If not specified, interactive selection will be prompted.
         #[arg(short, long, value_delimiter = ',', allow_hyphen_values = true)]
         devices: Option<Vec<String>>,
     },
 
     /// Delete devices from the tailnet (use -y before 'devices' to skip confirmation)
     Delete {
-        /// Device patterns to match (comma-separated or multiple flags). If not specified, interactive selection will be prompted.
+        // Device patterns to match (comma-separated or multiple flags).
+        // If not specified, interactive selection will be prompted.
         #[arg(short, long, value_delimiter = ',', allow_hyphen_values = true)]
         devices: Option<Vec<String>>,
     },
@@ -119,7 +126,7 @@ pub enum DeviceCommands {
         json: bool,
     },
 
-    /// Rename a device (use -y before 'devices' to skip confirmation)
+    // Rename a device
     Rename {
         /// Device pattern to match (device ID, name, or hostname)
         #[arg(required = true)]
@@ -140,28 +147,28 @@ pub enum UserCommands {
         json: bool,
     },
 
-    /// Approve a user (use -y before 'users' to skip confirmation)
+    /// Approve a user
     Approve {
         /// User pattern to match (login name or user ID)
         #[arg(short, long, required = true)]
         user: String,
     },
 
-    /// Suspend a user (use -y before 'users' to skip confirmation)
+    /// Suspend a user
     Suspend {
         /// User pattern to match (login name or user ID)
         #[arg(short, long, required = true)]
         user: String,
     },
 
-    /// Restore a suspended user (use -y before 'users' to skip confirmation)
+    /// Restore a suspended user
     Restore {
         /// User pattern to match (login name or user ID)
         #[arg(short, long, required = true)]
         user: String,
     },
 
-    /// Delete a user from the tailnet (use -y before 'users' to skip confirmation)
+    /// Delete a user from the tailnet
     Delete {
         /// User pattern to match (login name or user ID)
         #[arg(short, long, required = true)]

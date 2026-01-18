@@ -10,8 +10,9 @@ use clap::Parser;
 use api::TailscaleClient;
 use cli::{Cli, Commands, ContactCommands, DeviceCommands, UserCommands};
 use commands::{
-    run_add_tags, run_approve_user, run_delete, run_delete_user, run_info, run_list, run_list_contacts,
-    run_list_users, run_remove_tags, run_rename, run_restore_user, run_sign, run_suspend_user, run_update_tags,
+    run_add_tags, run_approve_user, run_delete, run_delete_user, run_info, run_list,
+    run_list_contacts, run_list_users, run_remove_tags, run_rename, run_restore_user, run_sign,
+    run_suspend_user, run_update_tags,
 };
 
 #[tokio::main]
@@ -29,7 +30,15 @@ async fn main() -> Result<()> {
                 no_paging,
                 json,
             } => {
-                run_list(&client, devices.as_deref(), locked, columns, no_paging, json).await?;
+                run_list(
+                    &client,
+                    devices.as_deref(),
+                    locked,
+                    columns,
+                    no_paging,
+                    json,
+                )
+                .await?;
             }
             DeviceCommands::UpdateTags { devices, tags } => {
                 run_update_tags(&client, devices.as_deref(), &tags, skip_confirm).await?;

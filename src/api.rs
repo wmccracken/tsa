@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use reqwest::Client;
 
-use crate::models::{ContactsResponse, Device, DevicesResponse, RenameDeviceRequest, UpdateTagsRequest, User, UsersResponse};
+use crate::models::{
+    ContactsResponse, Device, DevicesResponse, RenameDeviceRequest, UpdateTagsRequest, User,
+    UsersResponse,
+};
 
 const TAILSCALE_API_BASE: &str = "https://api.tailscale.com/api/v2";
 
@@ -142,7 +145,10 @@ impl TailscaleClient {
     }
 
     pub async fn approve_user(&self, user_id: &str) -> Result<()> {
-        let url = format!("{}/tailnet/{}/user/{}/approve", TAILSCALE_API_BASE, self.tailnet, user_id);
+        let url = format!(
+            "{}/tailnet/{}/user/{}/approve",
+            TAILSCALE_API_BASE, self.tailnet, user_id
+        );
 
         let response = self
             .client
@@ -162,7 +168,10 @@ impl TailscaleClient {
     }
 
     pub async fn suspend_user(&self, user_id: &str) -> Result<()> {
-        let url = format!("{}/tailnet/{}/user/{}/suspend", TAILSCALE_API_BASE, self.tailnet, user_id);
+        let url = format!(
+            "{}/tailnet/{}/user/{}/suspend",
+            TAILSCALE_API_BASE, self.tailnet, user_id
+        );
 
         let response = self
             .client
@@ -182,7 +191,10 @@ impl TailscaleClient {
     }
 
     pub async fn restore_user(&self, user_id: &str) -> Result<()> {
-        let url = format!("{}/tailnet/{}/user/{}/restore", TAILSCALE_API_BASE, self.tailnet, user_id);
+        let url = format!(
+            "{}/tailnet/{}/user/{}/restore",
+            TAILSCALE_API_BASE, self.tailnet, user_id
+        );
 
         let response = self
             .client
@@ -202,7 +214,10 @@ impl TailscaleClient {
     }
 
     pub async fn delete_user(&self, user_id: &str) -> Result<()> {
-        let url = format!("{}/tailnet/{}/user/{}", TAILSCALE_API_BASE, self.tailnet, user_id);
+        let url = format!(
+            "{}/tailnet/{}/user/{}",
+            TAILSCALE_API_BASE, self.tailnet, user_id
+        );
 
         let response = self
             .client

@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
-use comfy_table::{presets::NOTHING, Cell, Color, ContentArrangement, Table};
+use comfy_table::{Cell, Color, ContentArrangement, Table, presets::NOTHING};
 use std::process::Command;
 
 use crate::api::TailscaleClient;
@@ -71,10 +71,7 @@ pub async fn run_list(
             display_with_pager(&output, no_paging)?;
         }
     } else {
-        let header = format!(
-            "Found {} device(s):",
-            devices.len().to_string().cyan()
-        );
+        let header = format!("Found {} device(s):", devices.len().to_string().cyan());
         let table = build_devices_table(&devices, columns.as_deref());
 
         let output = format!("{} {}\n\n{}", "ℹ".blue().bold(), header, table);
@@ -94,8 +91,7 @@ pub async fn run_update_tags(
     let normalized_tags: Vec<String> = tags.iter().map(|t| normalize_tag(t)).collect();
     let all_devices = client.list_devices().await?;
 
-    let matched_devices =
-        resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
+    let matched_devices = resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
 
     if matched_devices.is_empty() {
         print_warning("No devices selected.");
@@ -148,8 +144,7 @@ pub async fn run_add_tags(
     let normalized_tags: Vec<String> = tags.iter().map(|t| normalize_tag(t)).collect();
     let all_devices = client.list_devices().await?;
 
-    let matched_devices =
-        resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
+    let matched_devices = resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
 
     if matched_devices.is_empty() {
         print_warning("No devices selected.");
@@ -206,8 +201,7 @@ pub async fn run_remove_tags(
     let normalized_tags: Vec<String> = tags.iter().map(|t| normalize_tag(t)).collect();
     let all_devices = client.list_devices().await?;
 
-    let matched_devices =
-        resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
+    let matched_devices = resolve_or_select_devices(device_patterns.unwrap_or(&[]), &all_devices)?;
 
     if matched_devices.is_empty() {
         print_warning("No devices selected.");
@@ -303,7 +297,10 @@ pub async fn run_sign(
                 print_warning("No devices with tailnet lock keys found.");
                 println!();
                 println!("{}", "This could mean:".dimmed());
-                println!("  {} Tailnet lock is not enabled on your tailnet", "•".dimmed());
+                println!(
+                    "  {} Tailnet lock is not enabled on your tailnet",
+                    "•".dimmed()
+                );
                 println!("  {} The API didn't return lock key fields", "•".dimmed());
                 return Ok(());
             }
@@ -412,8 +409,8 @@ pub async fn run_delete(
         filtered_devices.len().to_string().cyan()
     ));
 
-    let to_delete = select_devices_interactive(&filtered_devices)
-        .context("Failed to read device selection")?;
+    let to_delete =
+        select_devices_interactive(&filtered_devices).context("Failed to read device selection")?;
 
     if to_delete.is_empty() {
         print_warning("No devices selected.");
@@ -453,18 +450,17 @@ pub async fn run_delete(
     Ok(())
 }
 
-pub async fn run_info(
-    client: &TailscaleClient,
-    device_pattern: &str,
-    json: bool,
-) -> Result<()> {
+pub async fn run_info(client: &TailscaleClient, device_pattern: &str, json: bool) -> Result<()> {
     let all_devices = client.list_devices().await?;
 
     // Find the device by pattern
     let matched = resolve_device_patterns(&[device_pattern.to_string()], &all_devices);
 
     if matched.is_empty() {
-        print_warning(&format!("No device found matching pattern: {}", device_pattern));
+        print_warning(&format!(
+            "No device found matching pattern: {}",
+            device_pattern
+        ));
         return Ok(());
     }
 
@@ -490,7 +486,11 @@ pub async fn run_info(
 
     // Display formatted device information
     println!();
-    println!("{} {}", "Device Information".bold().cyan(), format!("({})", device_details.id).dimmed());
+    println!(
+        "{} {}",
+        "Device Information".bold().cyan(),
+        format!("({})", device_details.id).dimmed()
+    );
     println!();
 
     let mut table = Table::new();
@@ -595,7 +595,10 @@ pub async fn run_rename(
     let matched = resolve_device_patterns(&[device_pattern.to_string()], &all_devices);
 
     if matched.is_empty() {
-        print_warning(&format!("No device found matching pattern: {}", device_pattern));
+        print_warning(&format!(
+            "No device found matching pattern: {}",
+            device_pattern
+        ));
         return Ok(());
     }
 
@@ -629,7 +632,10 @@ pub async fn run_rename(
     match client.rename_device(&device.id, new_name.to_string()).await {
         Ok(()) => {
             println!();
-            print_success(&device.hostname, &format!("renamed to {}", new_name.green()));
+            print_success(
+                &device.hostname,
+                &format!("renamed to {}", new_name.green()),
+            );
         }
         Err(e) => print_error(&device.hostname, &format!("failed: {}", e)),
     }
