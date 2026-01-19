@@ -217,6 +217,7 @@ fn print_users_table(users: &[User]) {
         .load_preset(UTF8_FULL_CONDENSED)
         .set_content_arrangement(ContentArrangement::Dynamic)
         .set_header(vec![
+            Cell::new("ID").fg(Color::Cyan),
             Cell::new("Login Name").fg(Color::Cyan),
             Cell::new("Display Name").fg(Color::Cyan),
             Cell::new("Role").fg(Color::Cyan),
@@ -243,13 +244,13 @@ fn print_users_table(users: &[User]) {
         };
 
         table.add_row(vec![
+            Cell::new(&user.id).fg(Color::DarkGrey),
             Cell::new(&user.login_name),
             Cell::new(if user.display_name.is_empty() {
                 "-"
             } else {
                 &user.display_name
-            })
-            .fg(Color::DarkGrey),
+            }),
             Cell::new(&user.role),
             status_cell,
             Cell::new(user.device_count.to_string()),

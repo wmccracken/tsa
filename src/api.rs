@@ -146,8 +146,8 @@ impl TailscaleClient {
 
     pub async fn approve_user(&self, user_id: &str) -> Result<()> {
         let url = format!(
-            "{}/tailnet/{}/user/{}/approve",
-            TAILSCALE_API_BASE, self.tailnet, user_id
+            "{}/users/{}/approve",
+            TAILSCALE_API_BASE, user_id
         );
 
         let response = self
@@ -169,8 +169,8 @@ impl TailscaleClient {
 
     pub async fn suspend_user(&self, user_id: &str) -> Result<()> {
         let url = format!(
-            "{}/tailnet/{}/user/{}/suspend",
-            TAILSCALE_API_BASE, self.tailnet, user_id
+            "{}/users/{}/suspend",
+            TAILSCALE_API_BASE, user_id
         );
 
         let response = self
@@ -192,8 +192,8 @@ impl TailscaleClient {
 
     pub async fn restore_user(&self, user_id: &str) -> Result<()> {
         let url = format!(
-            "{}/tailnet/{}/user/{}/restore",
-            TAILSCALE_API_BASE, self.tailnet, user_id
+            "{}/users/{}/restore",
+            TAILSCALE_API_BASE, user_id
         );
 
         let response = self
@@ -215,13 +215,13 @@ impl TailscaleClient {
 
     pub async fn delete_user(&self, user_id: &str) -> Result<()> {
         let url = format!(
-            "{}/tailnet/{}/user/{}",
-            TAILSCALE_API_BASE, self.tailnet, user_id
+            "{}/users/{}/delete",
+            TAILSCALE_API_BASE, user_id
         );
 
         let response = self
             .client
-            .delete(&url)
+            .post(&url)
             .basic_auth(&self.api_key, Option::<&str>::None)
             .send()
             .await
