@@ -48,7 +48,14 @@ impl TailscaleClient {
             .await
             .context("Failed to parse devices response")?;
 
-        Ok(devices_response.devices)
+        // Compute and cache online status for each device to ensure consistent
+        // display throughout the session (avoids time-based status changes)
+        let mut devices = devices_response.devices;
+        for device in &mut devices {
+            device.compute_online_status();
+        }
+
+        Ok(devices)
     }
 
     pub async fn update_tags(&self, device_id: &str, tags: Vec<String>) -> Result<()> {

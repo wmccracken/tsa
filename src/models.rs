@@ -26,12 +26,21 @@ pub struct Device {
     pub tailnet_lock_key: String,
     #[serde(default)]
     pub blocks_incoming_connections: bool,
+    /// Cached online status, computed at fetch time to avoid time-based inconsistencies.
+    /// This is not part of the API response, it's computed after deserialization.
+    #[serde(skip)]
+    pub online: Option<bool>,
 }
 
 impl Device {
-    /// Check if device is online based on lastSeen timestamp.
-    /// The API returns lastSeen only when disconnected, so empty/recent = online.
-    pub fn is_online(&self) -> bool {
+    /// Compute the online status and cache it. Call this once after fetching devices
+    /// to ensure consistent status display throughout the session.
+    pub fn compute_online_status(&mut self) {
+        self.online = Some(self.calculate_online_status());
+    }
+
+    /// Internal calculation of online status based on lastSeen timestamp.
+    fn calculate_online_status(&self) -> bool {
         if self.last_seen.is_empty() {
             // No lastSeen means currently connected
             return true;
@@ -45,6 +54,12 @@ impl Device {
         } else {
             false
         }
+    }
+
+    /// Check if device is online. Uses cached value if available, otherwise computes it.
+    /// For consistent display, call compute_online_status() once after fetching devices.
+    pub fn is_online(&self) -> bool {
+        self.online.unwrap_or_else(|| self.calculate_online_status())
     }
 
     pub fn is_locked_out(&self) -> bool {
@@ -133,6 +148,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(device.is_online());
     }
@@ -153,6 +169,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(device.is_online());
     }
@@ -173,8 +190,38 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(!device.is_online());
+    }
+
+    #[test]
+    fn test_device_cached_online_status() {
+        let mut device = Device {
+            id: "test".to_string(),
+            name: "test".to_string(),
+            hostname: "test".to_string(),
+            tags: vec![],
+            os: "linux".to_string(),
+            user: "test@example.com".to_string(),
+            last_seen: String::new(), // Empty = online
+            node_key: String::new(),
+            tailnet_lock_error: String::new(),
+            tailnet_lock_key: String::new(),
+            blocks_incoming_connections: false,
+            online: None,
+        };
+
+        // Before caching, is_online computes the status
+        assert!(device.is_online());
+
+        // Cache the status
+        device.compute_online_status();
+        assert!(device.is_online());
+
+        // Even if we change last_seen, cached status should be returned
+        device.last_seen = "2020-01-01T00:00:00Z".to_string(); // Very old = would be offline
+        assert!(device.is_online()); // But cached value is still online
     }
 
     #[test]
@@ -191,6 +238,7 @@ mod tests {
             tailnet_lock_error: "signature verification failed".to_string(),
             tailnet_lock_key: "tlpub:def456".to_string(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(device.is_locked_out());
     }
@@ -209,6 +257,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: "tlpub:def456".to_string(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(!device.is_locked_out());
     }
@@ -227,6 +276,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: "tlpub:def456".to_string(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert!(device.has_lock_keys());
     }
@@ -245,6 +295,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert_eq!(device.owner(), "test@example.com");
     }
@@ -263,6 +314,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         };
         assert_eq!(device.owner(), "-");
     }
