@@ -536,7 +536,10 @@ pub fn select_devices_interactive(devices: &[Device]) -> io::Result<Vec<Device>>
         }
     }
 
-    let selected: Vec<Device> = selected_indices
+    let mut sorted_indices: Vec<_> = selected_indices.into_iter().collect();
+    sorted_indices.sort();
+
+    let selected: Vec<Device> = sorted_indices
         .into_iter()
         .map(|i| devices[i].clone())
         .collect();
@@ -582,6 +585,7 @@ mod tests {
             tailnet_lock_error: String::new(),
             tailnet_lock_key: String::new(),
             blocks_incoming_connections: false,
+            online: None,
         }
     }
 

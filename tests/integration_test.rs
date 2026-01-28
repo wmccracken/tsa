@@ -16,6 +16,7 @@ fn create_test_device(id: &str, name: &str, hostname: &str, tags: Vec<String>) -
         tailnet_lock_error: String::new(),
         tailnet_lock_key: String::new(),
         blocks_incoming_connections: false,
+        online: None,
     }
 }
 
