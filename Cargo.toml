@@ -1,6 +1,6 @@
 [package]
 name = "tsa"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "CLI tool for managing Tailscale device tags and signing locked nodes"
 authors = ["Will McCracken <tsa@lattefiend.com>"]
